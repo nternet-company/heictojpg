@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+.DS_Store
+*.log
+
+# Real HEIC files used to prove the converter locally. Kept out of the repo
+# because they are someone's photographs.
+fixtures/
+fixtures-heic/

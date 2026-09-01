@@ -1,0 +1,186 @@
+---
+
+import Screen from "./Screen.astro";
+import Drop from "../components/Drop.astro";
+import { SITE_URL } from "../config.mjs";
+import { pathFor, type Locale } from "../lib/site";
+import type { HomeCopy } from "../content/types";
+
+interface Props {
+  locale: Locale;
+  copy: HomeCopy;
+}
+
+const { locale, copy } = Astro.props;
+
+const readingSections = [
+  ...copy.sections,
+  { id: "book", heading: copy.bookHeading, body: [copy.bookBody] },
+];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: copy.faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.q,
+    acceptedAnswer: { "@type": "Answer", text: faq.a },
+  })),
+};
+
+const howToSchema = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: copy.howHeading,
+  totalTime: "PT1M",
+  tool: [{ "@type": "HowToTool", name: "A web browser" }],
+  step: copy.steps.map((step, index) => ({
+    "@type": "HowToStep",
+    position: index + 1,
+    name: step.name,
+    text: step.text,
+    url: new URL(pathFor("home", locale) + "#reading", SITE_URL).href,
+  })),
+};
+
+---
+
+<Screen
+  locale={locale}
+  page="home"
+  heading={copy.h1}
+  tagline={copy.tagline}
+  title={copy.title}
+  description={copy.description}
+  readLabel={copy.readLabel}
+  schemas={[faqSchema, howToSchema]}
+>
+  <Drop designation="HEIC to JPG" format="jpg" locale={locale} strings={copy.stage} />
+
+  <Fragment slot="reading">
+    <article id="reading">
+      <h2>{copy.aboutHeading}</h2>
+      <p class="lede">{copy.lede}</p>
+
+      <h3>{copy.howHeading}</h3>
+      <ol>{copy.steps.map((step) => <li><b>{step.name}.</b> {step.text}</li>)}</ol>
+
+      {
+        readingSections.map((section) => (
+          <section>
+            <h3>{section.heading}</h3>
+            {section.body.map((paragraph) => <p>{paragraph}</p>)}
+          </section>
+        ))
+      }
+
+      <h3>{copy.specHeading}</h3>
+      <p>{copy.specIntro}</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col"><span class="sr-only">Property</span></th>
+              <th scope="col">{copy.specColumns.heic}</th>
+              <th scope="col">{copy.specColumns.jpg}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              copy.specRows.map((row) => (
+                <tr>
+                  <th scope="row">{row.label}</th>
+                  <td>{row.heic}</td>
+                  <td>{row.jpg}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <h3>{copy.platformsHeading}</h3>
+      <p>{copy.platformsIntro}</p>
+      {
+        copy.platforms.map((platform) => (
+          <section id={platform.id}>
+            <h4>{platform.name}</h4>
+            <p>{platform.intro}</p>
+            <ol>{platform.steps.map((step) => <li>{step}</li>)}</ol>
+          </section>
+        ))
+      }
+
+      <h3>{copy.faqHeading}</h3>
+      <dl>
+        {copy.faqs.map((faq) => (<><dt>{faq.q}</dt><dd>{faq.a}</dd></>))}
+      </dl>
+
+      <p class="back"><a href="#" data-read-more>{copy.backLabel}</a></p>
+    </article>
+  </Fragment>
+</Screen>
+
+<style>
+  article :global(h2) {
+    font-size: clamp(1.6rem, 4vw, 2.1rem);
+    letter-spacing: -0.028em;
+    margin: 0 0 1rem;
+  }
+
+  article :global(h3) {
+    font-size: 1.1rem;
+    margin: 2.5rem 0 0.7rem;
+    letter-spacing: -0.012em;
+  }
+
+  article :global(h4) { font-size: 0.98rem; margin: 1.4rem 0 0.4rem; }
+
+  article :global(p), article :global(li), article :global(dd) {
+    line-height: 1.62;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+
+  article :global(.lede) { font-size: 1.08rem; }
+  article :global(p) { margin: 0 0 0.9rem; }
+  article :global(ol) { padding-left: 1.15rem; display: grid; gap: 0.5rem; margin: 0 0 1rem; }
+  article :global(b) { color: var(--ink-head); }
+  article :global(dt) { font-weight: 600; color: var(--ink-head); margin-top: 1.2rem; }
+  article :global(dd) { margin: 0.25rem 0 0; }
+  article :global(a) { color: var(--hot); }
+
+  .table-scroll { overflow-x: auto; }
+
+  table { width: 100%; min-width: 30rem; border-collapse: collapse; font-size: 0.9rem; }
+
+  thead th {
+    text-align: left;
+    padding: 0 0.8rem 0.5rem;
+    font-family: var(--font-print);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--ink-sub);
+  }
+
+  thead th:first-child { padding-left: 0; }
+
+  tbody th {
+    text-align: left;
+    font-weight: 450;
+    color: var(--ink-sub);
+    padding: 0.55rem 0.8rem 0.55rem 0;
+    border-bottom: 1px solid var(--hair);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--hair);
+    vertical-align: top;
+    color: var(--ink);
+  }
+
+  .back { margin-top: 3rem; }
+</style>

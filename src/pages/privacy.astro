@@ -1,0 +1,75 @@
+---
+import Article from "../layouts/Article.astro";
+---
+<Article
+  locale="en"
+  page="privacy"
+  title="Privacy | HEIC to JPG"
+  description="Your photos are converted inside your browser and are never uploaded. Here is exactly what this site does and does not collect, and how to check it yourself."
+  h1="Privacy"
+  updated="Last updated 29 August 2026"
+>
+  <p>
+    This site converts your photos without ever receiving them. That is the whole
+    privacy policy. The rest of this page explains how that works and how to check
+    it, because a claim like that is worth nothing if you have to take it on faith.
+  </p>
+
+  <h2>Your photos</h2>
+  <p>
+    When you choose or drop a HEIC file, the browser hands the file to code
+    running on this page. That code decodes it using a WebAssembly build of
+    libheif and re-encodes it as a JPG, all inside the tab. No request carrying
+    your photo is ever made. There is no server that could receive one.
+  </p>
+  <p>
+    We therefore never see, store, transmit or delete your photos, because we
+    never had them. Closing the tab is all the deletion there is.
+  </p>
+
+  <h2>How to check that yourself</h2>
+  <ul>
+    <li>Open your browser's developer tools and select the Network tab.</li>
+    <li>Convert a photo on the home page.</li>
+    <li>
+      Look at every request that appears. You will see the page, its stylesheet,
+      its script, the <code>.wasm</code> decoder, and <code>blob:</code> entries,
+      which are your own browser's references to files it holds in memory. There
+      is no upload.
+    </li>
+    <li>
+      For a stricter test, disconnect from the internet after the page has loaded
+      and convert a photo. It still works.
+    </li>
+  </ul>
+
+  <h2>What we do collect</h2>
+  <p>
+    Nothing that identifies you. There are no accounts, no cookies set by this
+    site, no advertising, no third-party trackers and no fingerprinting. We do not
+    know how many photos you converted or what was in them.
+  </p>
+
+  <h2>Server logs</h2>
+  <p>
+    The site is served by Cloudflare, which records standard request logs for the
+    pages and files it serves, including IP address, user agent and the URL
+    requested. These are the logs any web server keeps in order to work. They
+    never contain your photos, because your photos are never requested from a
+    server.
+  </p>
+
+  <h2>Links away from here</h2>
+  <p>
+    This site is made by <a href="https://fotofoto.app" rel="noopener">foto foto</a>,
+    which prints photo books. If you follow a link to it you are on a different
+    site with its own privacy policy. Nothing is carried across: your photos stay
+    in this tab, and foto foto receives no data about what you converted.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Questions about any of this can go to
+    <a href="mailto:hello@fotofoto.app">hello@fotofoto.app</a>.
+  </p>
+</Article>

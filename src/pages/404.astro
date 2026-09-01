@@ -1,0 +1,70 @@
+---
+
+import { SITE_NAME, SITE_URL } from "../config.mjs";
+import { pathFor, LOCALE_LABELS, LOCALE_TAGS, LOCALES } from "../lib/site";
+import "../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page not found. {SITE_NAME}</title>
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+    <meta name="theme-color" content="#f8f7f6" />
+  </head>
+  <body>
+    <main>
+      <p class="code">404</p>
+      <h1>That page does not exist.</h1>
+      <p class="line">The converter does, and it is one click away.</p>
+      <a class="go" href={pathFor("home", "en")}>{SITE_NAME}</a>
+      <nav class="langs" aria-label="Language">
+        {LOCALES.map((locale) => (
+          <a href={pathFor("home", locale)} hreflang={LOCALE_TAGS[locale]} lang={LOCALE_TAGS[locale]}>{LOCALE_LABELS[locale]}</a>
+        ))}
+      </nav>
+    </main>
+
+    <style>
+      main {
+        min-height: 100svh;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 0.6rem;
+        text-align: center;
+        padding: 2rem;
+      }
+      .code {
+        margin: 0;
+        font-family: var(--font-pixel);
+        font-size: 44px;
+        color: var(--ink-sub);
+      }
+      h1 { margin: 0; font-size: clamp(1.3rem, 3vw, 1.7rem); letter-spacing: -0.02em; }
+      .line { margin: 0; color: var(--ink-sub); }
+      .go {
+        margin-top: 1rem;
+        padding: 0.6em 1.6em;
+        border-radius: 999px;
+        background: var(--ink-head);
+        color: var(--paper);
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .langs {
+        margin-top: 1.6rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.4rem 1rem;
+      }
+      .langs a { color: var(--ink-sub); font-size: 0.78rem; text-decoration: none; }
+      .langs a:hover { color: var(--ink-head); text-decoration: underline; }
+    </style>
+  </body>
+</html>

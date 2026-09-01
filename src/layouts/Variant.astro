@@ -1,0 +1,100 @@
+---
+
+import Screen from "./Screen.astro";
+import { SITE_URL } from "../config.mjs";
+import { pathFor } from "../lib/site";
+import Drop from "../components/Drop.astro";
+import type { Locale } from "../lib/site";
+import type { HomeCopy } from "../content/types";
+import type { VariantCopy, VariantId } from "../content/variant-types";
+
+interface Props {
+  locale: Locale;
+  variant: VariantId;
+  copy: VariantCopy;
+  home: HomeCopy;
+}
+
+const { locale, variant, copy, home } = Astro.props;
+
+const strings = {
+  ...home.stage,
+  save: copy.converterOverrides.downloadAll ?? home.stage.save,
+  saveOne:
+    variant === "pdf"
+      ? (copy.converterOverrides.downloadAll ?? home.stage.saveOne)
+      : home.stage.saveOne,
+};
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: copy.faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.q,
+    acceptedAnswer: { "@type": "Answer", text: faq.a },
+  })),
+};
+
+const fmt = variant.toUpperCase();
+const steps = home.steps.map((step) => {
+  const swap = (text: string) => {
+    let out = text.replace(/JPEG/g, fmt).replace(/JPG/g, fmt);
+    if (variant === "pdf") out = out.replace(/ZIP/g, "PDF");
+    return out;
+  };
+  return { name: swap(step.name), text: swap(step.text) };
+});
+
+const howToSchema = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: home.howHeading,
+  totalTime: "PT1M",
+  tool: [{ "@type": "HowToTool", name: "A web browser" }],
+  step: steps.map((step, index) => ({
+    "@type": "HowToStep",
+    position: index + 1,
+    name: step.name,
+    text: step.text,
+    url: new URL(pathFor(variant, locale) + "#reading", SITE_URL).href,
+  })),
+};
+---
+
+<Screen
+  locale={locale}
+  page={variant}
+  heading={copy.h1}
+  tagline={home.tagline}
+  title={copy.title}
+  description={copy.description}
+  readLabel={home.readLabel}
+  schemas={[faqSchema, howToSchema]}
+>
+  <Drop designation={"HEIC to " + variant.toUpperCase()} format={variant} locale={locale} strings={strings} />
+
+  <Fragment slot="reading">
+    <article id="reading">
+      <h2>{copy.h1}</h2>
+      <p class="lede">{copy.lede}</p>
+      <h3>{home.howHeading}</h3>
+      <ol>{steps.map((step) => <li><b>{step.name}.</b> {step.text}</li>)}</ol>
+      <h3>{copy.whyHeading}</h3>
+      {copy.why.map((paragraph) => <p>{paragraph}</p>)}
+      <h3>{copy.faqHeading}</h3>
+      <dl>{copy.faqs.map((faq) => (<><dt>{faq.q}</dt><dd>{faq.a}</dd></>))}</dl>
+      <p class="back"><a href="#" data-read-more>{home.backLabel}</a></p>
+    </article>
+  </Fragment>
+</Screen>
+
+<style>
+  article :global(h2) { font-size: clamp(1.6rem, 4vw, 2.1rem); letter-spacing: -0.028em; margin: 0 0 1rem; }
+  article :global(h3) { font-size: 1.1rem; margin: 2.5rem 0 0.7rem; }
+  article :global(p), article :global(dd) { line-height: 1.62; color: var(--ink); margin: 0 0 0.9rem; text-wrap: pretty; }
+  article :global(.lede) { font-size: 1.08rem; }
+  article :global(dt) { font-weight: 600; color: var(--ink-head); margin-top: 1.2rem; }
+  article :global(dd) { margin: 0.25rem 0 0; }
+  article :global(a) { color: var(--hot); }
+  .back { margin-top: 3rem; }
+</style>

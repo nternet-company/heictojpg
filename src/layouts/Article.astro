@@ -1,0 +1,142 @@
+---
+
+import { SITE_URL, SITE_NAME, FOTOFOTO_URL } from "../config.mjs";
+import { DEFAULT_LOCALE, LOCALE_TAGS, pathFor, type Locale, type PageId } from "../lib/site";
+import "../styles/global.css";
+
+interface Props {
+  locale: Locale;
+  page: PageId;
+  title: string;
+  description: string;
+  h1: string;
+  updated: string;
+}
+
+const { locale, page, title, description, h1, updated } = Astro.props;
+const canonical = new URL(pathFor(page, locale), SITE_URL).href;
+const ogImage = new URL("/card.png", SITE_URL).href;
+const home = new URL(pathFor("home", DEFAULT_LOCALE), SITE_URL).href;
+
+const graph = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}#organization`,
+      name: "foto foto",
+      url: FOTOFOTO_URL,
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${canonical}#webpage`,
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: LOCALE_TAGS[locale],
+      isPartOf: { "@id": `${SITE_URL}#website` },
+      breadcrumb: { "@id": `${canonical}#breadcrumb` },
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${canonical}#breadcrumb`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: SITE_NAME, item: home },
+        { "@type": "ListItem", position: 2, name: h1, item: canonical },
+      ],
+    },
+  ],
+};
+const safeJson = JSON.stringify(graph).replace(/</g, "\\u003c");
+---
+
+<!doctype html>
+<html lang={LOCALE_TAGS[locale]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={canonical} />
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href={new URL(pathFor(page, DEFAULT_LOCALE), SITE_URL).href}
+    />
+    <meta name="robots" content="index,follow" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#f8f7f6" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${h1}. ${description}`} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <script is:inline type="application/ld+json" set:html={safeJson} />
+  </head>
+  <body>
+    <article>
+      <a class="up" href={pathFor("home", DEFAULT_LOCALE)}>{SITE_NAME}</a>
+      <h1>{h1}</h1>
+      <p class="updated">{updated}</p>
+      <slot />
+      <p class="foot">
+        Made by <a href={FOTOFOTO_URL} rel="noopener">foto foto</a>.
+      </p>
+    </article>
+
+    <style>
+      article {
+        max-width: 38rem;
+        margin: 0 auto;
+        padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 4vw, 2.5rem) 6rem;
+      }
+
+      .up {
+        display: inline-block;
+        margin-bottom: 2.5rem;
+        font-family: var(--font-display);
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-sub);
+        text-decoration: none;
+      }
+
+      .up:hover { color: var(--ink-head); }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: clamp(1.7rem, 4vw, 2.3rem);
+        letter-spacing: -0.03em;
+        font-weight: 640;
+      }
+
+      .updated { margin: 0 0 2.5rem; color: var(--ink-sub); font-size: 0.86rem; }
+
+      article :global(h2) { margin: 2.5rem 0 0.7rem; font-size: 1.12rem; font-weight: 620; }
+      article :global(p) { margin: 0 0 1rem; line-height: 1.65; color: var(--ink); text-wrap: pretty; }
+      article :global(ul) { margin: 0 0 1rem; padding-left: 1.15rem; display: grid; gap: 0.5rem; color: var(--ink); line-height: 1.6; }
+      article :global(code) { font-family: var(--font-print); font-size: 0.88em; background: var(--plaster); padding: 0.1em 0.35em; border-radius: 0.25rem; }
+      article :global(a) { color: var(--hot); }
+      .foot { margin-top: 3.5rem; color: var(--ink-sub); font-size: 0.88rem; }
+    </style>
+  </body>
+</html>

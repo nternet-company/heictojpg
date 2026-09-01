@@ -1,0 +1,22 @@
+# Cloudflare Pages headers.
+#
+# The HTML is cheap to revalidate and must stay fresh when copy changes; the
+# hashed assets and the WASM decoder never change under the same name, so they
+# get a year.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  Cache-Control: public, max-age=0, must-revalidate
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.wasm
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: application/wasm
+
+/icon.svg
+  Cache-Control: public, max-age=604800

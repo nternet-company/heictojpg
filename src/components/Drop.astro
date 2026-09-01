@@ -1,0 +1,480 @@
+---
+
+import { FOTOFOTO_URL } from "../config.mjs";
+import type { PlateStrings } from "../lib/convert/ui-types";
+
+interface Props {
+  designation: string;
+  format: "jpg" | "png" | "pdf";
+  locale: string;
+  strings: PlateStrings;
+}
+
+const { format, locale, strings } = Astro.props;
+
+const hintDot = strings.idleHint.indexOf(". ");
+const hintTop = hintDot > 0 ? strings.idleHint.slice(0, hintDot + 1) : strings.idleHint;
+const hintRest = hintDot > 0 ? strings.idleHint.slice(hintDot + 2) : "";
+
+const duskLayers = [
+  { file: "sky", w: 272, h: 160, d: 340 },
+  { file: "far", w: 272, h: 160, d: 210 },
+  { file: "mountains", w: 544, h: 160, d: 130 },
+  { file: "trees", w: 544, h: 160, d: 85 },
+  { file: "front", w: 544, h: 160, d: 55 },
+];
+---
+
+<heic-drop data-state="idle" data-scene="dusk" format={format} locale={locale} strings={JSON.stringify(strings)}>
+  <div class="scene" data-scene-box aria-hidden="true">
+    {duskLayers.map((layer) => (
+      <div
+        class="layer"
+        style={`background-image: url(/img/scene/${layer.file}.png); --imgw: ${layer.w}; --imgh: ${layer.h}; animation-duration: ${layer.d}s;`}
+      >
+      </div>
+    ))}
+  </div>
+
+  <script is:inline>
+    (function () {
+      var scenes = {
+        morning: [
+          ["morning-back", 272, 160, 210],
+          ["morning-middle", 272, 160, 130],
+          ["morning-lights", 272, 160, 90],
+          ["morning-front", 272, 160, 55],
+        ],
+        day: [
+          ["day-sky", 1280, 360, 0],
+          ["day-sun", 1280, 360, 0],
+          ["day-clouds", 1280, 360, 340],
+          ["day-far", 1280, 360, 190],
+          ["day-mid", 1280, 360, 130],
+          ["day-near", 1280, 360, 90],
+          ["day-trees", 1280, 360, 60],
+          ["day-rocks", 1280, 360, 45],
+        ],
+      };
+      var hour = new Date().getHours();
+      var part = hour < 5 ? "night" : hour < 11 ? "morning" : hour < 17 ? "day" : hour < 22 ? "dusk" : "night";
+      var root = document.currentScript.closest("heic-drop");
+      if (!root) return;
+      root.dataset.scene = part;
+      var set = scenes[part];
+      if (!set) return; // dusk and night keep the mountain layers.
+      var box = root.querySelector("[data-scene-box]");
+      var html = "";
+      for (var i = 0; i < set.length; i += 1) {
+        html +=
+          '<div class="layer" style="background-image:url(/img/scene/' + set[i][0] + '.png);--imgw:' + set[i][1] + ";--imgh:" + set[i][2] +
+          (set[i][3] ? ";animation-duration:" + set[i][3] + 's"' : ';animation:none"') +
+          "></div>";
+      }
+      box.innerHTML = html;
+    })();
+  </script>
+
+  <div class="room">
+    <div class="panel" data-panel>
+      <div class="idlebox">
+        <svg class="plus" viewBox="0 0 56 56" aria-hidden="true">
+          <circle cx="28" cy="28" r="26.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+          <path d="M28 18 v20 M18 28 h20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+        </svg>
+        <p class="card-line"><span>{hintTop}</span>{hintRest && <span>{hintRest}</span>}</p>
+        <button class="add" data-add type="button">{strings.idle}</button>
+      </div>
+
+      <div class="workbox">
+        <div class="bar" aria-hidden="true"><span class="bar-fill" data-fill></span></div>
+        <span class="pct" data-counter aria-hidden="true"></span>
+      </div>
+
+      <div class="gallery" data-gallery><div class="gwall" data-gwall></div></div>
+
+      <div class="endbar">
+        <button class="zip" data-take type="button">{strings.save}</button>
+        <button class="redo" data-again type="button">{strings.again}</button>
+
+        <div class="support">
+          <a class="support-book" href={FOTOFOTO_URL} rel="noopener" aria-label="foto foto">
+            <span class="book-object" aria-hidden="true"><span class="book-front"><img data-cover alt="" decoding="async" /></span></span>
+          </a>
+          <p class="support-copy">
+            <b>{strings.bookTitle}<a href={FOTOFOTO_URL} rel="noopener">foto foto</a></b>
+            <span>{strings.bookBody}</span>
+          </p>
+        </div>
+      </div>
+
+      <p class="oops" data-oops hidden></p>
+    </div>
+  </div>
+
+  <label class="pickfile">
+    <span class="sr-only">{strings.idle}</span>
+    <input
+      data-input
+      type="file"
+      multiple
+      accept=".heic,.heif,.hif,image/heic,image/heif,image/heic-sequence,image/heif-sequence"
+    />
+  </label>
+  <p class="sr-only" role="status" data-status></p>
+</heic-drop>
+
+<script>
+  import "../lib/drop";
+</script>
+
+<style is:global>
+
+
+  heic-drop {
+    position: absolute;
+    inset: 0;
+    display: block;
+    --paper: #fbf6ec;
+  }
+
+  heic-drop[data-scene="dusk"] { --ink: #2f2138; --book-c: #502e49; --ground-c: #ab6a8c; }
+  heic-drop[data-scene="night"] { --ink: #241a2c; --book-c: #3a2340; --ground-c: #4b3050; }
+  heic-drop[data-scene="morning"] { --ink: #2b2530; --book-c: #735034; --ground-c: #b07030; }
+  heic-drop[data-scene="day"] { --ink: #253522; --book-c: #5a7d3c; --ground-c: #8db5c8; }
+
+
+
+
+
+  heic-drop .scene { position: absolute; inset: 0; overflow: hidden; background: var(--ground-c); }
+  heic-drop .layer {
+    position: absolute;
+    inset: 0;
+    background-repeat: repeat-x;
+    background-size: auto 100%;
+    image-rendering: pixelated;
+    --tile: calc(var(--imgw) / var(--imgh) * 100svh);
+    animation: scene-drift linear infinite;
+  }
+  heic-drop[data-scene="night"] .scene { filter: brightness(0.45) saturate(0.72) hue-rotate(-8deg); }
+  @keyframes scene-drift {
+    from { background-position-x: 0; }
+    to { background-position-x: calc(-1 * var(--tile)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    heic-drop .layer { animation: none; }
+  }
+
+
+
+
+
+  heic-drop .room {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    justify-items: center;
+    align-items: end;
+    padding-top: clamp(3.2rem, 8vh, 4.6rem);
+  }
+
+  heic-drop .panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: clamp(0.7rem, 1.8vh, 1.1rem);
+    width: min(88vw, 372px);
+    height: 262px;
+    margin-bottom: clamp(1.2rem, 6vh, 3rem);
+    padding: clamp(1.1rem, 2.6vh, 1.6rem);
+    border-radius: 16px;
+    background: rgb(251 246 236 / 0.94);
+    border: 1px solid rgb(255 255 255 / 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+    transition:
+      width 650ms var(--ease),
+      height 650ms var(--ease),
+      margin-bottom 650ms var(--ease),
+      border-radius 650ms var(--ease),
+      scale 220ms var(--ease-scale);
+  }
+  heic-drop[data-state="over"] .panel { scale: 1.02; }
+  heic-drop[data-state="working"] .panel,
+  heic-drop[data-state="done"] .panel {
+    width: min(94vw, 940px);
+    height: calc(100% - clamp(0.6rem, 2vh, 1.4rem));
+    margin-bottom: 0;
+    border-radius: 16px 16px 0 0;
+    cursor: default;
+    justify-content: flex-start;
+  }
+
+
+  heic-drop .idlebox {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
+  }
+  heic-drop .plus { width: 40px; height: 40px; color: var(--ink); opacity: 0.85; flex: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    heic-drop[data-state="over"] .plus { rotate: 90deg; }
+    heic-drop .plus { transition: rotate 400ms var(--spring); }
+  }
+  heic-drop .card-line {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--ink);
+  }
+  heic-drop .card-line span { display: block; }
+  heic-drop[data-state="working"] .idlebox,
+  heic-drop[data-state="done"] .idlebox { display: none; }
+
+  heic-drop .add,
+  heic-drop .zip {
+    border: none;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-sans);
+    font-size: 0.92rem;
+    font-weight: 700;
+    padding: 0.62em 1.5em;
+    cursor: pointer;
+    transition: scale 150ms var(--ease-scale), background 300ms var(--ease);
+  }
+  heic-drop .add:hover, heic-drop .zip:hover { scale: 1.04; }
+  heic-drop .add:active, heic-drop .zip:active { scale: 0.97; }
+  heic-drop .zip { font-size: 0.95rem; padding: 0.62em 1.7em; }
+  heic-drop .zip[data-busy] { opacity: 0.65; pointer-events: none; }
+
+
+  heic-drop .workbox {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    flex: none;
+    padding-top: 0.3rem;
+  }
+  heic-drop[data-state="working"] .workbox { display: flex; }
+  heic-drop .bar {
+    width: min(100%, 420px);
+    height: 4px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ink) 16%, transparent);
+    overflow: hidden;
+  }
+  heic-drop .bar-fill {
+    display: block;
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: var(--ink);
+    transition: width 280ms linear;
+  }
+
+  heic-drop .pct {
+    font-family: var(--font-pixel);
+    font-size: 20px;
+    line-height: 1;
+    color: var(--ink);
+    opacity: 0.75;
+  }
+  heic-drop .pct .digit { display: inline-block; width: 0.684em; text-align: center; }
+
+
+
+  heic-drop .gallery {
+    display: none;
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+  heic-drop[data-state="working"] .gallery,
+  heic-drop[data-state="done"] .gallery { display: block; }
+  heic-drop .gwall { position: relative; width: 100%; }
+  heic-drop .tile {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+    cursor: pointer;
+    opacity: 0;
+    scale: 0.85;
+    transition: transform 500ms var(--ease), opacity 500ms var(--ease), scale 500ms var(--ease);
+    will-change: transform;
+  }
+  heic-drop .tile.is-on { opacity: 1; scale: 1; }
+  heic-drop .tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  heic-drop .tile:hover { opacity: 0.9; }
+
+
+  heic-drop .endbar {
+    display: none;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.6rem;
+    flex: none;
+    width: 100%;
+    flex-wrap: wrap;
+    padding: 0.55rem 0 0.15rem;
+  }
+  heic-drop[data-state="done"] .endbar { display: flex; }
+  heic-drop .redo {
+    border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+    border-radius: 999px;
+    background: rgb(251 246 236 / 0.6);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.55em 1.1em;
+    cursor: pointer;
+    transition: scale 150ms var(--ease-scale), background 180ms var(--ease);
+  }
+  heic-drop .redo:hover { scale: 1.04; background: rgb(251 246 236 / 0.95); }
+
+  heic-drop .support {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+    max-width: min(100%, 330px);
+  }
+
+  heic-drop .support-book { display: block; perspective: 700px; flex: none; text-decoration: none; }
+  heic-drop .book-object {
+    position: relative;
+    display: block;
+    width: 52px;
+    aspect-ratio: 2550 / 3300;
+    background: #1a1a1a;
+    border-radius: 2px 5px 5px 2px;
+    transform: rotateY(-22deg) rotateZ(-4deg);
+    transform-style: preserve-3d;
+    transition: transform 450ms var(--spring);
+  }
+  heic-drop .support-book:hover .book-object { transform: rotateY(-9deg) rotateZ(-1deg) scale(1.06); }
+
+  heic-drop .support-book { display: block; perspective: 800px; flex: none; text-decoration: none; }
+  heic-drop .book-object {
+    position: relative;
+    display: block;
+    width: 58px;
+    aspect-ratio: 2550 / 3300;
+    transform: rotateY(-6deg) rotateZ(-1deg);
+    transform-style: preserve-3d;
+    transition: transform 450ms var(--spring);
+    will-change: transform;
+  }
+  heic-drop .support-book:hover .book-object { transform: rotateY(-17deg) rotateZ(-3deg) translateY(-2px) scale(1.04); }
+
+  heic-drop .book-front {
+    position: absolute;
+    inset: 0;
+    display: block;
+    background: linear-gradient(160deg, #2c2d31, #1e1f22 55%, #191a1d);
+    overflow: hidden;
+  }
+
+  heic-drop .book-front::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 5%;
+    width: 1px;
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  heic-drop .book-front::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, rgb(255 255 255 / 0.1), transparent 42%);
+    pointer-events: none;
+  }
+  heic-drop .book-front img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--cover-w, 64%);
+    height: var(--cover-h, 44%);
+    translate: -50% -50%;
+    object-fit: cover;
+    display: block;
+  }
+  heic-drop .book-front img:not([src]) { display: none; }
+
+  heic-drop .book-object::after {
+    content: "";
+    position: absolute;
+    top: 1%;
+    right: -2px;
+    bottom: 1%;
+    width: 2px;
+    background: #e9e5db;
+    transform: rotateY(50deg);
+    transform-origin: left;
+  }
+
+  heic-drop .support-copy { margin: 0; display: grid; gap: calc(0.1em + 2px); min-width: 0; }
+  @media (min-width: 62rem) {
+    heic-drop .support { flex-direction: row-reverse; }
+    heic-drop .support-copy { text-align: right; justify-items: end; }
+  }
+  heic-drop .support-copy b { font-size: 0.76rem; color: var(--ink); line-height: 1.3; }
+  heic-drop .support-copy b a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+  heic-drop .support-copy span { font-size: 0.7rem; color: color-mix(in srgb, var(--ink) 70%, transparent); line-height: 1.35; text-wrap: balance; }
+
+  heic-drop .oops {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  heic-drop .pickfile { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+  heic-drop .pickfile input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
+
+  @media (max-width: 62rem) {
+    heic-drop[data-state="working"] .panel,
+    heic-drop[data-state="done"] .panel { width: 94vw; }
+    heic-drop .endbar { justify-content: center; }
+    heic-drop .support {
+      flex-basis: 100%;
+      justify-content: center;
+      margin: 0.6rem auto 0;
+      padding: 1.2rem 0 0;
+      border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+      max-width: min(100%, 340px);
+    }
+  }
+
+
+  @media (prefers-reduced-motion: reduce) {
+    heic-drop .panel { transition: none; }
+    heic-drop .bar-fill { transition: none; }
+    heic-drop .tile { transition: none; opacity: 1; scale: 1; }
+    heic-drop .book-object, heic-drop .add, heic-drop .zip, heic-drop .redo { transition: none; }
+  }
+</style>

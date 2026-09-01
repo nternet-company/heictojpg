@@ -1,0 +1,39 @@
+---
+/**
+ * The localized sibling converters.
+ *
+ * The slug is the translated one for that language, so /de/heic-in-png-umwandeln
+ * exists and /de/heic-to-png does not. One canonical path per locale means
+ * nothing to canonicalise away.
+ */
+import Variant from "../../layouts/Variant.astro";
+import { copyFor } from "../../content";
+import { variantCopyFor, VARIANT_LOCALES } from "../../content/variants";
+import { DEFAULT_LOCALE, SLUGS, type Locale } from "../../lib/site";
+import type { VariantId } from "../../content/variant-types";
+
+export function getStaticPaths() {
+  // Declared in here on purpose: Astro hoists getStaticPaths into its own
+  // scope, so anything it reads has to be defined inside it.
+  const VARIANTS: VariantId[] = ["png", "pdf"];
+  const paths = [];
+  for (const locale of VARIANT_LOCALES) {
+    if (locale === DEFAULT_LOCALE) continue;
+    if (!copyFor(locale)) continue;
+    for (const variant of VARIANTS) {
+      if (!variantCopyFor(locale, variant)) continue;
+      paths.push({
+        params: { locale, slug: SLUGS[variant][locale] },
+        props: { variant },
+      });
+    }
+  }
+  return paths;
+}
+
+const { locale } = Astro.params;
+const { variant } = Astro.props as { variant: VariantId };
+const home = copyFor(locale as Locale)!;
+const copy = variantCopyFor(locale as Locale, variant)!;
+---
+<Variant locale={locale as Locale} variant={variant} copy={copy} home={home} />

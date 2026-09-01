@@ -1,0 +1,535 @@
+---
+import { FOTOFOTO_URL, SITE_NAME, SITE_URL } from "../config.mjs";
+import {
+  alternates,
+  DEFAULT_LOCALE,
+  LOCALE_LABELS,
+  LOCALE_TAGS,
+  pathFor,
+  type Locale,
+  type PageId,
+} from "../lib/site";
+import { READY_LOCALES } from "../content";
+import "../styles/global.css";
+
+interface Props {
+  locale: Locale;
+  page: PageId;
+  heading: string;
+
+  tagline: string;
+  title: string;
+  description: string;
+  readLabel: string;
+  schemas?: unknown[];
+  locales?: readonly Locale[];
+}
+
+const { locale, page, heading, tagline, title, description, readLabel, schemas = [], locales } = Astro.props;
+const path = pathFor(page, locale);
+const canonical = new URL(path, SITE_URL).href;
+const available = locales ?? READY_LOCALES;
+const langs = alternates(page).filter((alt) => available.includes(alt.locale));
+const ogPath = page === "png" ? "/card-png.png" : page === "pdf" ? "/card-pdf.png" : "/card.png";
+const ogImage = new URL(ogPath, SITE_URL).href;
+
+const ogLocales: Record<Locale, string> = {
+  en: "en_US",
+  fr: "fr_FR",
+  de: "de_DE",
+  pl: "pl_PL",
+  it: "it_IT",
+  es: "es_ES",
+  nl: "nl_NL",
+};
+
+const flags: Record<Locale, string> = {
+  en: "gb",
+  nl: "nl",
+  de: "de",
+  fr: "fr",
+  es: "es",
+  it: "it",
+  pl: "pl",
+};
+
+const footerLabels: Record<Locale, { about: string; privacy: string; terms: string }> = {
+  en: { about: "About", privacy: "Privacy", terms: "Terms" },
+  fr: { about: "À propos", privacy: "Confidentialité", terms: "Conditions" },
+  de: { about: "Über uns", privacy: "Datenschutz", terms: "Bedingungen" },
+  pl: { about: "O nas", privacy: "Prywatność", terms: "Warunki" },
+  it: { about: "Chi siamo", privacy: "Privacy", terms: "Termini" },
+  es: { about: "Acerca de", privacy: "Privacidad", terms: "Términos" },
+  nl: { about: "Over", privacy: "Privacy", terms: "Voorwaarden" },
+};
+
+const labels = footerLabels[locale];
+const socialAlt = `${heading}. ${description}`;
+
+const organisation = {
+  "@type": "Organization",
+  "@id": `${SITE_URL}#organization`,
+  name: "foto foto",
+  url: FOTOFOTO_URL,
+  logo: { "@id": `${SITE_URL}#logo` },
+};
+
+const logo = {
+  "@type": "ImageObject",
+  "@id": `${SITE_URL}#logo`,
+  url: new URL("/apple-touch-icon.png", SITE_URL).href,
+  contentUrl: new URL("/apple-touch-icon.png", SITE_URL).href,
+  width: 180,
+  height: 180,
+  caption: SITE_NAME,
+};
+
+const image = {
+  "@type": "ImageObject",
+  "@id": `${canonical}#primaryimage`,
+  url: ogImage,
+  contentUrl: ogImage,
+  width: 1200,
+  height: 630,
+  caption: socialAlt,
+};
+
+const website = {
+  "@type": "WebSite",
+  "@id": `${SITE_URL}#website`,
+  url: SITE_URL,
+  name: SITE_NAME,
+  inLanguage: LOCALE_TAGS[locale],
+  publisher: { "@id": `${SITE_URL}#organization` },
+};
+
+const webpage = {
+  "@type": "WebPage",
+  "@id": `${canonical}#webpage`,
+  url: canonical,
+  name: title,
+  description,
+  inLanguage: LOCALE_TAGS[locale],
+  isPartOf: { "@id": `${SITE_URL}#website` },
+  breadcrumb: { "@id": `${canonical}#breadcrumb` },
+  about: { "@id": `${canonical}#application` },
+  primaryImageOfPage: { "@id": `${canonical}#primaryimage` },
+};
+
+const application = {
+  "@type": "SoftwareApplication",
+  "@id": `${canonical}#application`,
+  name: heading,
+  url: canonical,
+  description,
+  image: { "@id": `${canonical}#primaryimage` },
+  screenshot: ogImage,
+  applicationCategory: "MultimediaApplication",
+  applicationSubCategory: "Image converter",
+  operatingSystem: "Any operating system with a modern web browser",
+  browserRequirements: "Requires JavaScript and WebAssembly",
+  inLanguage: LOCALE_TAGS[locale],
+  isAccessibleForFree: true,
+  creator: { "@id": `${SITE_URL}#organization` },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "EUR",
+    availability: "https://schema.org/InStock",
+  },
+  featureList:
+    page === "png"
+      ? ["HEIC and HEIF to PNG", "Local browser conversion", "No upload or account", "Single download or ZIP batch"]
+      : page === "pdf"
+        ? ["HEIC and HEIF to PDF", "Local browser conversion", "No upload or account", "One photo per PDF page"]
+        : ["HEIC and HEIF to JPG", "Local browser conversion", "No upload or account", "Original capture metadata", "Single download or ZIP batch"],
+};
+
+const extraSchemas = schemas.map((schema) => {
+  if (!schema || typeof schema !== "object") return schema;
+  const { "@context": _context, ...node } = schema as Record<string, unknown>;
+  return node;
+});
+
+const home = new URL(pathFor("home", locale), SITE_URL).href;
+const crumbs =
+  page === "home"
+    ? [{ name: SITE_NAME, item: home }]
+    : [
+        { name: SITE_NAME, item: home },
+        { name: heading, item: canonical },
+      ];
+
+const breadcrumb = {
+  "@type": "BreadcrumbList",
+  "@id": `${canonical}#breadcrumb`,
+  itemListElement: crumbs.map((crumb, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: crumb.name,
+    item: crumb.item,
+  })),
+};
+
+const graph = {
+  "@context": "https://schema.org",
+  "@graph": [organisation, logo, image, website, webpage, application, breadcrumb, ...extraSchemas],
+};
+
+const safeJson = JSON.stringify(graph).replace(/</g, "\\u003c");
+---
+
+<!doctype html>
+<html lang={LOCALE_TAGS[locale]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    {langs.map((alt) => <link rel="alternate" hreflang={LOCALE_TAGS[alt.locale]} href={new URL(alt.path, SITE_URL).href} />)}
+    <link rel="alternate" hreflang="x-default" href={new URL(pathFor(page, DEFAULT_LOCALE), SITE_URL).href} />
+
+    <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f8f7f6" />
+
+    <link rel="preload" href="/fonts/LineSeedJP-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/LineSeedJP-700-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content={ogLocales[locale]} />
+    {langs.filter((alt) => alt.locale !== locale).map((alt) => <meta property="og:locale:alternate" content={ogLocales[alt.locale]} />)}
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:secure_url" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={socialAlt} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={socialAlt} />
+
+    <script is:inline type="application/ld+json" set:html={safeJson} />
+  </head>
+
+  <body>
+    <div class="screen">
+      <header>
+        <nav class="fmt chrome-menu" aria-label="Format">
+          <details>
+            <summary class="chrome-pill page-title">
+              <h1>{heading}</h1>
+              <span class="sr-only">{tagline}</span>
+              <svg class="chev" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true">
+                <path d="M1 1 l4 4 4 -4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </summary>
+            <div class="menu-panel from-left">
+              <ul>
+                <li>
+                  <a href={pathFor("home", locale)} aria-current={page === "home" ? "page" : undefined}>
+                    <b>JPG</b>
+                    {page === "home" && <svg class="tick" viewBox="0 0 12 10" width="12" height="10" aria-hidden="true"><path d="M1 5.5 l3.4 3.2 L11 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>}
+                  </a>
+                </li>
+                <li>
+                  <a href={pathFor("png", locale)} aria-current={page === "png" ? "page" : undefined}>
+                    <b>PNG</b>
+                    {page === "png" && <svg class="tick" viewBox="0 0 12 10" width="12" height="10" aria-hidden="true"><path d="M1 5.5 l3.4 3.2 L11 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>}
+                  </a>
+                </li>
+                <li>
+                  <a href={pathFor("pdf", locale)} aria-current={page === "pdf" ? "page" : undefined}>
+                    <b>PDF</b>
+                    {page === "pdf" && <svg class="tick" viewBox="0 0 12 10" width="12" height="10" aria-hidden="true"><path d="M1 5.5 l3.4 3.2 L11 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>}
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </details>
+        </nav>
+
+        <div class="chrome-cluster">
+          <a class="chrome-pill" href="#reading" data-read-more>{labels.about}</a>
+
+          <nav class="langs chrome-menu" aria-label="Language">
+            <details>
+              <summary class="chrome-pill">
+                <img src={"/img/flags/" + flags[locale] + ".svg"} alt="" width="20" height="15" />
+                <span class="summary-code">{locale}</span>
+                <svg class="chev" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true">
+                  <path d="M1 1 l4 4 4 -4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </summary>
+              <div class="menu-panel from-right">
+                <ul>
+                  {langs.map((alt) => (
+                    <li>
+                      <a href={alt.path} hreflang={LOCALE_TAGS[alt.locale]} lang={LOCALE_TAGS[alt.locale]} aria-current={alt.locale === locale ? "page" : undefined}>
+                        <img src={"/img/flags/" + flags[alt.locale] + ".svg"} alt="" width="22" height="16" />
+                        <span>{LOCALE_LABELS[alt.locale]}</span>
+                        {alt.locale === locale && <svg class="tick" viewBox="0 0 12 10" width="12" height="10" aria-hidden="true"><path d="M1 5.5 l3.4 3.2 L11 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </details>
+          </nav>
+        </div>
+      </header>
+
+      <main><slot /></main>
+    </div>
+
+    <div class="reading" data-reading>
+      <slot name="reading" />
+      <nav class="reading-links" aria-label="Site">
+        <a href={pathFor("png", locale)}>PNG</a>
+        <a href={pathFor("pdf", locale)}>PDF</a>
+        <a href={pathFor("about", DEFAULT_LOCALE)}>{labels.about}</a>
+        <a href={pathFor("privacy", DEFAULT_LOCALE)}>{labels.privacy}</a>
+        <a href={pathFor("terms", DEFAULT_LOCALE)}>{labels.terms}</a>
+        <a href="https://github.com/kayamy/heictojpg" rel="noopener">GitHub</a>
+      </nav>
+      {page === "home" && (
+        <p class="shelf-badge">
+          <a href="https://www.tinyshelf.co/?ref=heictojpg.photo" title="Featured on tinyshelf">
+            <img src="https://www.tinyshelf.co/badge/tinyshelf-badge-light-5ca4026a.svg"
+                 alt="Featured on tinyshelf" width="216" height="64"/>
+          </a>
+        </p>
+      )}
+    </div>
+
+    <script>
+      const reading = document.querySelector<HTMLElement>("[data-reading]");
+      if (reading) reading.hidden = true;
+      document.documentElement.classList.add("js");
+
+      const menus = Array.from(
+        document.querySelectorAll<HTMLDetailsElement>(".chrome-menu details"),
+      );
+      const shutters = menus.map((menu) => {
+        const panel = menu.querySelector<HTMLElement>(".menu-panel");
+        let closing = false;
+        const shut = () => {
+          if (!menu.open || closing || !panel) return;
+          closing = true;
+          panel.classList.add("is-closing");
+          const done = () => {
+            panel.classList.remove("is-closing");
+            menu.open = false;
+            closing = false;
+          };
+          const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          if (reduced) done();
+          else window.setTimeout(done, 230);
+        };
+        menu.addEventListener("toggle", () => {
+          if (menu.open) {
+            for (let i = 0; i < menus.length; i += 1) {
+              if (menus[i] !== menu) shutters[i]();
+            }
+          }
+        });
+        return shut;
+      });
+      document.addEventListener("pointerdown", (event) => {
+        menus.forEach((menu, index) => {
+          if (menu.open && !menu.contains(event.target as Node)) shutters[index]();
+        });
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") shutters.forEach((shut) => shut());
+      });
+
+      document.querySelectorAll<HTMLElement>("[data-read-more]").forEach((opener) => {
+        opener.addEventListener("click", (event) => {
+          event.preventDefault();
+          if (!reading) return;
+          const open = !document.body.classList.contains("is-reading");
+          reading.hidden = !open;
+          document.body.classList.toggle("is-reading", open);
+          if (open) reading.scrollIntoView({ block: "start" });
+        });
+      });
+    </script>
+
+    <style>
+
+      html.js, html.js body { height: 100%; overflow: clip; overscroll-behavior: none; }
+      html.js body:not(.is-reading) { position: fixed; inset: 0; width: 100%; }
+      html.js body.is-reading { position: static; height: auto; overflow: auto; overscroll-behavior: auto; }
+
+      html.js:has(body.is-reading) { height: auto; overflow: auto; overscroll-behavior: auto; }
+
+      .screen {
+        position: fixed;
+        inset: 0;
+        height: 100svh;
+        overflow: clip;
+      }
+      @supports (height: 100dvh) { .screen { height: 100dvh; } }
+      body.is-reading .screen { display: none; }
+
+      header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 40;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: clamp(0.7rem, 1.6vw, 1.2rem) clamp(0.7rem, 1.8vw, 1.4rem);
+        pointer-events: none;
+      }
+      header > * { pointer-events: auto; }
+
+
+      .page-title {
+        min-width: 0;
+        max-width: 60vw;
+        gap: 0.55rem;
+      }
+      .page-title h1 {
+        margin: 0;
+        overflow: hidden;
+        font-family: var(--font-sans);
+        font-size: 0.86rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .chev { flex: none; opacity: 0.6; transition: rotate 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+      .chrome-menu details[open] .chev { rotate: 180deg; }
+
+      .chrome-cluster { display: flex; align-items: flex-start; gap: 0.45rem; flex: none; }
+
+      .chrome-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.8rem;
+        border-radius: 999px;
+        background: rgb(255 255 255 / 0.55);
+        border: 1px solid rgb(255 255 255 / 0.5);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        color: #14171c;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        list-style: none;
+        transition: background 180ms var(--ease);
+      }
+      .chrome-pill:hover { background: rgb(255 255 255 / 0.75); }
+      .chrome-pill img { display: block; border-radius: 3px; }
+
+      .langs { position: relative; z-index: 50; flex: none; }
+      .langs details { position: relative; }
+      .langs summary::-webkit-details-marker { display: none; }
+      .summary-code {
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .chrome-menu { position: relative; z-index: 50; flex: none; }
+      .chrome-menu details { position: relative; }
+      .chrome-menu summary::-webkit-details-marker { display: none; }
+      .menu-panel {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        min-width: 9rem;
+        padding: 0.4rem;
+        border-radius: 18px;
+        background: rgb(251 246 236 / 0.92);
+        border: 1px solid rgb(255 255 255 / 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        transition:
+          opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
+          transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+      }
+      .menu-panel.from-right { right: 0; transform-origin: top right; width: 14.5rem; }
+      .menu-panel.from-left { left: 0; transform-origin: top left; }
+      .chrome-menu details[open] .menu-panel { opacity: 1; transform: scale(1); }
+      @starting-style {
+        .chrome-menu details[open] .menu-panel { opacity: 0; transform: scale(0.95); }
+      }
+      .chrome-menu .menu-panel.is-closing { opacity: 0; transform: scale(0.95); }
+      @media (prefers-reduced-motion: reduce) {
+        .menu-panel { transition: none; }
+      }
+      .menu-panel ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+      .menu-panel a {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+        padding: 0.55rem 0.7rem;
+        border-radius: 12px;
+        color: #14171c;
+        font-size: 0.84rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background 150ms cubic-bezier(0.23, 1, 0.32, 1);
+      }
+      .menu-panel a b { font-weight: 700; letter-spacing: 0.02em; }
+      .menu-panel img { display: block; border-radius: 4px; box-shadow: 0 0 0 1px rgb(20 23 28 / 0.12); }
+      .menu-panel .tick { margin-left: auto; flex: none; }
+      .menu-panel a:hover { background: rgb(20 23 28 / 0.07); }
+      .menu-panel a[aria-current="page"] { background: #14171c; color: #fbf6ec; }
+      .menu-panel a[aria-current="page"]:hover { background: #14171c; }
+
+      main { position: absolute; inset: 0; }
+
+      .reading {
+        width: min(100% - 2rem, 50rem);
+        margin: clamp(1rem, 5vw, 3.5rem) auto 5rem;
+        padding: clamp(1.3rem, 4vw, 3rem);
+        border: 1px solid var(--hair);
+        border-radius: 18px;
+        background: var(--paper);
+      }
+      .reading-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.9rem 1.4rem;
+        margin-top: 2.5rem;
+        padding-top: 1.2rem;
+        border-top: 1px solid var(--hair);
+      }
+      .reading-links a { color: var(--ink-sub); font-size: 0.8rem; text-decoration: none; }
+      .reading-links a:hover { color: var(--ink-head); text-decoration: underline; }
+      .shelf-badge { margin: 1.4rem 0 0; }
+
+      @media (max-width: 62rem) {
+        .page-title { max-width: 52vw; }
+        .reading { width: calc(100% - 1rem); margin: 0.5rem auto 3rem; padding: 1rem; }
+      }
+    </style>
+  </body>
+</html>

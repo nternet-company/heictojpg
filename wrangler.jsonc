@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "heictojpg",
+  "compatibility_date": "2026-08-29",
+  // A pure static site: Workers Static Assets serves dist/ straight from the
+  // edge with no Worker script in front of it, so there is no cold start and
+  // nothing to run per request.
+  //
+  // drop-trailing-slash, not auto: the build writes directory indexes while
+  // every canonical, hreflang and sitemap URL is slashless (trailingSlash
+  // "never"), so the edge must serve /nl from /nl/index.html and redirect
+  // /nl/ down to /nl, never the other way around.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "html_handling": "drop-trailing-slash"
+  },
+  // Both hostnames attach as custom domains the moment the zone finishes its
+  // nameserver move; until then deploys still land on workers.dev.
+  "routes": [
+    { "pattern": "heictojpg.photo", "custom_domain": true },
+    { "pattern": "www.heictojpg.photo", "custom_domain": true }
+  ]
+}

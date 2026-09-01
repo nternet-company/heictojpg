@@ -1,0 +1,15 @@
+---
+import Home from "../../layouts/Home.astro";
+import { copyFor, READY_LOCALES } from "../../content";
+import { DEFAULT_LOCALE } from "../../lib/site";
+
+export function getStaticPaths() {
+  return READY_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE).map(
+    (locale) => ({ params: { locale } }),
+  );
+}
+
+const { locale } = Astro.params;
+const copy = copyFor(locale as never)!;
+---
+<Home locale={locale as never} copy={copy} />
